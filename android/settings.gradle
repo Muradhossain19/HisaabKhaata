@@ -4,3 +4,10 @@ extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autoli
 rootProject.name = 'HisaabKhaata'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
+
+// Manually include native libraries that autolinking may not add automatically
+include ':react-native-mmkv'
+project(':react-native-mmkv').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-mmkv/android')
+
+include ':react-native-nitro-modules'
+project(':react-native-nitro-modules').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-nitro-modules/android')

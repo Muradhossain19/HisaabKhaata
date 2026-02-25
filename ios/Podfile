@@ -17,6 +17,10 @@ end
 target 'HisaabKhaata' do
   config = use_native_modules!
 
+  # NitroModules is provided by the `react-native-nitro-modules` package
+  # Add explicit local pod so that dependencies such as `NitroMmkv` can find it.
+  pod 'NitroModules', :path => File.join('..', 'node_modules', 'react-native-nitro-modules')
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

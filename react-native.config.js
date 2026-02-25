@@ -1,0 +1,8 @@
+// react-native.config.js
+module.exports = {
+  project: {
+    ios: {},
+    android: {},
+  },
+  assets: ['./node_modules/react-native-vector-icons/Fonts/'], // ✅ এটাই মূল অংশ
+};
