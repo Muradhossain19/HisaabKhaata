@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
-  Image,
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Category, Transaction } from '../types/finance';
+import { Category, PaymentMethod, Transaction } from '../types/finance';
 import defaultCategories from '../data/defaultCategories';
 import transactionsService from '../services/transactions';
+import categoriesService from '../services/categories';
+import paymentMethodsService from '../services/paymentMethods';
 
 type Props = {
   visible: boolean;
@@ -28,22 +29,46 @@ export default function QuickEntry({
   recentCategories,
 }: Props) {
   // Using Modal fallback instead of @gorhom/bottom-sheet to avoid native deps during dev
-  const snapPoints = useMemo(() => ['45%', '80%'], []);
-  const sheetRef = useRef<any>(null);
+  useMemo(() => ['45%', '80%'], []);
+  useRef<any>(null);
 
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [type, setType] = useState<Transaction['type']>('expense');
+  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     recentCategories?.[0]?.id ?? defaultCategories[0].id,
   );
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    (async () => {
+      try {
+        const remote = await categoriesService.getCategories();
+        if (remote.length) setCategories(remote);
+      } catch {}
+      try {
+        const pm = await paymentMethodsService.getPaymentMethods();
+        if (pm.length) {
+          setPaymentMethods(pm);
+          setSelectedPaymentMethod(pm[0]?.id ?? null);
+        }
+      } catch {}
+    })();
+  }, [visible]);
 
   async function handleSave() {
     const numeric = parseFloat(amount || '0');
     if (numeric <= 0) return; // simple validation
     const payload: Partial<Transaction> = {
       amount: numeric,
-      type: 'expense',
+      type,
       categoryId: selectedCategory ?? null,
+      paymentMethodId: selectedPaymentMethod ?? null,
       note: note || undefined,
       date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
@@ -78,6 +103,20 @@ export default function QuickEntry({
     );
   }
 
+  function renderPaymentMethod({ item }: { item: PaymentMethod }) {
+    const active = item.id === selectedPaymentMethod;
+    return (
+      <TouchableOpacity
+        onPress={() => setSelectedPaymentMethod(item.id)}
+        style={[styles.chip, active && styles.chipActive]}
+      >
+        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -91,6 +130,42 @@ export default function QuickEntry({
       <View style={styles.modalContainer}>
         <View style={styles.container}>
           <Text style={styles.title}>Quick Entry</Text>
+
+          <View style={styles.typeRow}>
+            <TouchableOpacity
+              onPress={() => setType('expense')}
+              style={[
+                styles.typeChip,
+                type === 'expense' && styles.typeChipActiveExpense,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeChipText,
+                  type === 'expense' && styles.typeChipTextActive,
+                ]}
+              >
+                Expense
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setType('income')}
+              style={[
+                styles.typeChip,
+                type === 'income' && styles.typeChipActiveIncome,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeChipText,
+                  type === 'income' && styles.typeChipTextActive,
+                ]}
+              >
+                Income
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <TextInput
             style={styles.amount}
             placeholder="0.00"
@@ -103,12 +178,26 @@ export default function QuickEntry({
           <Text style={styles.label}>Category</Text>
           <FlatList
             horizontal
-            data={defaultCategories}
+            data={categories}
             keyExtractor={i => i.id}
             renderItem={renderCategory}
             showsHorizontalScrollIndicator={false}
             style={{ marginBottom: 8 }}
           />
+
+          {paymentMethods.length ? (
+            <>
+              <Text style={styles.label}>Payment</Text>
+              <FlatList
+                horizontal
+                data={paymentMethods}
+                keyExtractor={i => i.id}
+                renderItem={renderPaymentMethod}
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 8 }}
+              />
+            </>
+          ) : null}
 
           <TextInput
             style={styles.note}
@@ -134,6 +223,26 @@ export default function QuickEntry({
 const styles = StyleSheet.create({
   container: { padding: 16 },
   title: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  typeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  typeChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+  },
+  typeChipActiveExpense: {
+    backgroundColor: '#fee2e2',
+  },
+  typeChipActiveIncome: {
+    backgroundColor: '#dcfce7',
+  },
+  typeChipText: { fontSize: 14, color: '#334155', fontWeight: '700' },
+  typeChipTextActive: { color: '#0f172a' },
   amount: {
     fontSize: 28,
     padding: 8,

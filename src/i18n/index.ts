@@ -24,6 +24,7 @@ const translations: Record<string, Record<string, any>> = {
         sendReset: 'রিসেট লিংক পাঠান',
       },
       links: {
+        back: 'ফিরে যান',
         signupPrompt: 'একাউন্ট নেই?',
         signupLink: 'একাউন্ট তৈরি করুন',
         forgotPassword: 'পাসওয়ার্ড ভুলে গেছেন?',
@@ -71,6 +72,7 @@ const translations: Record<string, Record<string, any>> = {
         sendReset: 'Send reset link',
       },
       links: {
+        back: 'Back',
         signupPrompt: "Don't have an account?",
         signupLink: 'Create account',
         forgotPassword: 'Forgot password?',

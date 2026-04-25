@@ -1,34 +1,30 @@
 // src/screens/auth/LoginScreen.tsx
 
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  StatusBar,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import AuthStyles from '../../components/AuthStyles';
+import AuthScreenShell from '../../components/AuthScreenShell';
 import InputField from '../../components/InputField';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loginUser } from '../../store/authSlice';
 import { useTranslation } from '../../i18n';
 import LanguageToggle from '../../components/LanguageToggle';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AppButton from '../../components/AppButton';
+import { authMetrics } from '../../theme/authTheme';
 
-// এখন LoginScreen কম্পোনেন্ট শুরু হচ্ছে
 const LoginScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
+  const authLoading = useAppSelector(s => s.auth.loading);
+  const { width } = useWindowDimensions();
+  const m = authMetrics(width);
+  const logoInner = m.logoSize * 0.48;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +48,6 @@ const LoginScreen = () => {
 
     try {
       const action = await dispatch(loginUser({ email, password }));
-      // if rejected, show server message
       // @ts-ignore
       if (action.type && action.type.endsWith('/rejected')) {
         // @ts-ignore
@@ -80,9 +75,8 @@ const LoginScreen = () => {
         return;
       }
 
-      // success — navigate directly to Dashboard
       try {
-        navigation.replace('Dashboard');
+        // RootNavigator will switch to AppNavigator once token is set.
       } catch (e) {
         console.warn('navigate after login failed', e);
       }
@@ -92,78 +86,92 @@ const LoginScreen = () => {
   };
 
   return (
-    <SafeAreaView style={AuthStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={AuthStyles.keyboardView}
-      >
-        <View style={AuthStyles.contentView}>
-          {/* ১. আধুনিক লোগো এবং হেডার */}
-          <View style={AuthStyles.headerContainer}>
-            <LanguageToggle />
-            <View style={AuthStyles.logoBackground}>
-              <Text style={AuthStyles.logoText}>H</Text>
-            </View>
-            <Text style={AuthStyles.title}>{t('auth.loginTitle')}</Text>
-            <Text style={AuthStyles.subtitle}>{t('auth.loginSubtitle')}</Text>
-          </View>
+    <AuthScreenShell centerVertical>
+      <View style={AuthStyles.topRow}>
+        <LanguageToggle />
+      </View>
 
-          {/* ২. আইকনসহ ইনপুট ফর্ম */}
-          <View style={AuthStyles.formContainer}>
-            <InputField
-              value={email}
-              onChange={setEmail}
-              placeholder={t('auth.placeholders.email')}
-              keyboardType="email-address"
-              icon="mail-outline"
-            />
-
-            <InputField
-              value={password}
-              onChange={setPassword}
-              placeholder={t('auth.placeholders.password')}
-              secure={!isPasswordVisible}
-              icon="lock-closed-outline"
-              rightAccessory={
-                <TouchableOpacity
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                >
-                  <Icon
-                    name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={22}
-                    color="#6b7280"
-                  />
-                </TouchableOpacity>
-              }
-            />
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ForgotPassword')}
-            >
-              <Text style={AuthStyles.forgotPassword}>
-                {t('auth.links.forgotPassword')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ৩. লগইন বাটন (এখন এটি একটি স্বতন্ত্র কম্পোনেন্ট) */}
-          <AppButton title={t('auth.buttons.login')} onPress={handleLogin} />
-
-          {/* ৪. রেজিস্ট্রেশন লিঙ্ক */}
-          <View style={AuthStyles.signupContainer}>
-            <Text style={AuthStyles.signupText}>
-              {t('auth.links.signupPrompt')}{' '}
-            </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={AuthStyles.signupLink}>
-                {t('auth.links.signupLink')}
-              </Text>
-            </TouchableOpacity>
-          </View>
+      <View style={AuthStyles.headerContainer}>
+        <View
+          style={[
+            AuthStyles.logoBackground,
+            {
+              width: m.logoSize,
+              height: m.logoSize,
+              borderRadius: m.logoSize / 2,
+            },
+          ]}
+        >
+          <Text style={[AuthStyles.logoText, { fontSize: logoInner }]}>H</Text>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <Text style={AuthStyles.brandTagline}>HisaabKhaata</Text>
+        <Text style={[AuthStyles.title, { fontSize: m.titleSize }]}>
+          {t('auth.loginTitle')}
+        </Text>
+        <Text style={[AuthStyles.subtitle, { fontSize: m.subtitleSize }]}>
+          {t('auth.loginSubtitle')}
+        </Text>
+      </View>
+
+      <View style={AuthStyles.formContainer}>
+        <InputField
+          value={email}
+          onChange={setEmail}
+          placeholder={t('auth.placeholders.email')}
+          keyboardType="email-address"
+          icon="mail-outline"
+        />
+
+        <InputField
+          value={password}
+          onChange={setPassword}
+          placeholder={t('auth.placeholders.password')}
+          secure={!isPasswordVisible}
+          icon="lock-closed-outline"
+          rightAccessory={
+            <TouchableOpacity
+              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPasswordVisible ? 'Hide password' : 'Show password'
+              }
+            >
+              <Icon
+                name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#64748b"
+              />
+            </TouchableOpacity>
+          }
+        />
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ForgotPassword')}
+          accessibilityRole="button"
+        >
+          <Text style={AuthStyles.forgotPassword}>
+            {t('auth.links.forgotPassword')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <AppButton
+        title={t('auth.buttons.login')}
+        onPress={handleLogin}
+        loading={authLoading}
+      />
+
+      <View style={AuthStyles.signupContainer}>
+        <Text style={AuthStyles.signupText}>{t('auth.links.signupPrompt')}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Register')}
+          accessibilityRole="button"
+        >
+          <Text style={AuthStyles.signupLink}>{t('auth.links.signupLink')}</Text>
+        </TouchableOpacity>
+      </View>
+    </AuthScreenShell>
   );
 };
 

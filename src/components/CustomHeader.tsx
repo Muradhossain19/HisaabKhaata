@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { tokens } from '../theme/tokens';
 
 type Props = {
   title: string;
@@ -37,9 +38,9 @@ const CustomHeader = ({ title, canGoBack = false, rightAccessory }: Props) => {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: tokens.colors.border,
   },
   container: {
     flexDirection: 'row',
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: tokens.colors.text,
   },
 });
 

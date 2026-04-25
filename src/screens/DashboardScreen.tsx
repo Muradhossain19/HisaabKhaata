@@ -3,12 +3,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  StatusBar,
   Image,
 } from 'react-native';
 import transactionsService from '../services/transactions';
@@ -20,6 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppTabParamList } from '../navigation/AppNavigator';
 import defaultCategories from '../data/defaultCategories';
+import Screen from '../components/ui/Screen';
+import Card from '../components/ui/Card';
+import AppText from '../components/ui/AppText';
+import { tokens } from '../theme/tokens';
 
 // ড্যাশবোর্ডের জন্য নতুন, গ্র্যান্ড হেডার
 const DashboardHeader = () => {
@@ -28,8 +29,12 @@ const DashboardHeader = () => {
   return (
     <View style={styles.headerContainer}>
       <View>
-        <Text style={styles.headerGreeting}>স্বাগতম,</Text>
-        <Text style={styles.headerUsername}>{user?.name || 'ব্যবহারকারী'}</Text>
+        <AppText variant="muted" style={styles.headerGreeting}>
+          স্বাগতম,
+        </AppText>
+        <AppText style={styles.headerUsername}>
+          {user?.name || 'ব্যবহারকারী'}
+        </AppText>
       </View>
       <TouchableOpacity>
         <Image
@@ -55,10 +60,12 @@ const AccountSummaryCard = ({
   const incomePercentage = total > 0 ? (income / total) * 100 : 0;
 
   return (
-    <View style={styles.summaryCard}>
+    <Card style={styles.summaryCard}>
       <View style={styles.balanceSection}>
-        <Text style={styles.balanceLabel}>বর্তমান ব্যালেন্স</Text>
-        <Text style={styles.balanceValue}>৳{balance.toFixed(2)}</Text>
+        <AppText variant="muted" style={styles.balanceLabel}>
+          বর্তমান ব্যালেন্স
+        </AppText>
+        <AppText style={styles.balanceValue}>৳{balance.toFixed(2)}</AppText>
       </View>
 
       {/* আয়-ব্যয়ের গ্রাফিক্যাল বার */}
@@ -68,17 +75,23 @@ const AccountSummaryCard = ({
 
       <View style={styles.incomeExpenseSection}>
         <View style={styles.incomeDetail}>
-          <View style={[styles.dot, { backgroundColor: '#22c55e' }]} />
-          <Text style={styles.detailLabel}>মোট আয়</Text>
-          <Text style={styles.incomeValue}>৳{income.toFixed(2)}</Text>
+          <View
+            style={[styles.dot, { backgroundColor: tokens.colors.success }]}
+          />
+          <AppText variant="caption" style={styles.detailLabel}>
+            মোট আয়
+          </AppText>
+          <AppText style={styles.incomeValue}>৳{income.toFixed(2)}</AppText>
         </View>
         <View style={styles.expenseDetail}>
-          <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
-          <Text style={styles.detailLabel}>মোট ব্যয়</Text>
-          <Text style={styles.expenseValue}>৳{expense.toFixed(2)}</Text>
+          <View style={[styles.dot, { backgroundColor: tokens.colors.danger }]} />
+          <AppText variant="caption" style={styles.detailLabel}>
+            মোট ব্যয়
+          </AppText>
+          <AppText style={styles.expenseValue}>৳{expense.toFixed(2)}</AppText>
         </View>
       </View>
-    </View>
+    </Card>
   );
 };
 
@@ -92,12 +105,20 @@ const QuickActions = ({
 }) => (
   <View style={styles.quickActionsContainer}>
     <TouchableOpacity style={styles.actionButton} onPress={onAddIncome}>
-      <Icon name="add-circle-outline" size={22} color="#22c55e" />
-      <Text style={styles.actionButtonText}>টাকা যোগ করুন</Text>
+      <Icon
+        name="add-circle-outline"
+        size={22}
+        color={tokens.colors.success}
+      />
+      <AppText style={styles.actionButtonText}>টাকা যোগ করুন</AppText>
     </TouchableOpacity>
     <TouchableOpacity style={styles.actionButton} onPress={onAddExpense}>
-      <Icon name="remove-circle-outline" size={22} color="#ef4444" />
-      <Text style={styles.actionButtonText}>খরচ যোগ করুন</Text>
+      <Icon
+        name="remove-circle-outline"
+        size={22}
+        color={tokens.colors.danger}
+      />
+      <AppText style={styles.actionButtonText}>খরচ যোগ করুন</AppText>
     </TouchableOpacity>
   </View>
 );
@@ -106,6 +127,7 @@ const QuickActions = ({
 const RecentTransactionRow = ({ item }: { item: Transaction }) => {
   const category = defaultCategories.find(c => c.id === item.categoryId);
   const isIncome = item.type === 'income';
+  const amountColor = isIncome ? tokens.colors.success : tokens.colors.danger;
 
   return (
     <View style={styles.recentRow}>
@@ -115,35 +137,30 @@ const RecentTransactionRow = ({ item }: { item: Transaction }) => {
           {
             backgroundColor: category?.color
               ? `${category.color}20`
-              : '#e2e8f0',
+              : tokens.colors.border,
           },
         ]}
       >
         <Icon
           name={category?.icon || 'help'}
           size={20}
-          color={category?.color || '#64748b'}
+          color={category?.color || tokens.colors.textMuted}
         />
       </View>
       <View style={styles.recentDetails}>
-        <Text style={styles.recentNote} numberOfLines={1}>
+        <AppText style={styles.recentNote} numberOfLines={1}>
           {item.note || category?.name || 'লেনদেন'}
-        </Text>
-        <Text style={styles.recentDate}>
+        </AppText>
+        <AppText variant="caption" style={styles.recentDate}>
           {new Date(item.date).toLocaleDateString('bn-BD', {
             day: 'numeric',
             month: 'short',
           })}
-        </Text>
+        </AppText>
       </View>
-      <Text
-        style={[
-          styles.recentAmount,
-          { color: isIncome ? '#16a34a' : '#dc2626' },
-        ]}
-      >
+      <AppText style={[styles.recentAmount, { color: amountColor }]}>
         {isIncome ? '+' : '-'}৳{item.amount.toFixed(2)}
-      </Text>
+      </AppText>
     </View>
   );
 };
@@ -176,10 +193,9 @@ export default function DashboardScreen() {
   const recent = transactions.slice(0, 5);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f1f5f9" />
+    <Screen padded={false} backgroundColor={tokens.colors.bg}>
       <DashboardHeader />
-      <ScrollView contentContainerStyle={styles.scrollView}>
+      <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false}>
         <AccountSummaryCard
           balance={summary.balance}
           income={summary.income}
@@ -193,26 +209,30 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>সাম্প্রতিক লেনদেন</Text>
+            <AppText style={styles.sectionTitle}>সাম্প্রতিক লেনদেন</AppText>
             <TouchableOpacity
               onPress={() => navigation.navigate('Transactions')}
             >
-              <Text style={styles.seeAllText}>সব দেখুন</Text>
+              <AppText style={styles.seeAllText}>সব দেখুন</AppText>
             </TouchableOpacity>
           </View>
           {recent.length > 0 ? (
-            <View style={styles.recentListContainer}>
+            <Card padded={false} style={styles.recentListContainer}>
               {recent.map(item => (
                 <RecentTransactionRow key={item.id} item={item} />
               ))}
-            </View>
+            </Card>
           ) : (
-            <View style={styles.noTransactionsContainer}>
-              <Icon name="document-text-outline" size={40} color="#94a3b8" />
-              <Text style={styles.noTransactionsText}>
+            <Card style={styles.noTransactionsContainer}>
+              <Icon
+                name="document-text-outline"
+                size={40}
+                color={tokens.colors.textSubtle}
+              />
+              <AppText variant="muted" style={styles.noTransactionsText}>
                 কোনো সাম্প্রতিক লেনদেন নেই।
-              </Text>
-            </View>
+              </AppText>
+            </Card>
           )}
         </View>
       </ScrollView>
@@ -225,31 +245,30 @@ export default function DashboardScreen() {
           await load();
         }}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9', // হালকা ধূসর ব্যাকগ্রাউন্ড
+    backgroundColor: tokens.colors.bg,
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
+    paddingHorizontal: tokens.spacing.lg,
+    paddingTop: tokens.spacing.md,
+    paddingBottom: tokens.spacing.md,
   },
   headerGreeting: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: tokens.typography.size.sm,
   },
   headerUsername: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontSize: tokens.typography.size.xl,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.text,
   },
   avatar: {
     width: 50,
@@ -259,41 +278,34 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   scrollView: {
-    paddingHorizontal: 20,
+    paddingHorizontal: tokens.spacing.lg,
     paddingBottom: 100,
   },
   summaryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#475569',
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    borderRadius: tokens.radii.xl,
   },
   balanceSection: {
-    marginBottom: 16,
+    marginBottom: tokens.spacing.lg,
   },
   balanceLabel: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: tokens.typography.size.sm,
   },
   balanceValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontSize: tokens.typography.size['2xl'],
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.text,
     marginTop: 4,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: tokens.colors.danger,
     borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: tokens.spacing.lg,
   },
   incomeBar: {
     height: '100%',
-    backgroundColor: '#22c55e',
+    backgroundColor: tokens.colors.success,
     borderRadius: 4,
   },
   incomeExpenseSection: {
@@ -315,19 +327,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#64748b',
     marginRight: 8,
   },
   incomeValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#16a34a',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.success,
   },
   expenseValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#dc2626',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.danger,
   },
   quickActionsContainer: {
     flexDirection: 'row',
@@ -340,8 +350,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radii.md,
     paddingVertical: 14,
     elevation: 2,
     shadowColor: '#475569',
@@ -351,7 +361,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#334155',
+    color: tokens.colors.textMuted,
     marginLeft: 8,
   },
   section: {
@@ -364,19 +374,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.text,
   },
   seeAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2563eb',
+    color: tokens.colors.primary,
   },
   recentListContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: tokens.radii.lg,
+    padding: tokens.spacing.sm,
   },
   recentRow: {
     flexDirection: 'row',
@@ -397,11 +406,9 @@ const styles = StyleSheet.create({
   recentNote: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#334155',
+    color: tokens.colors.text,
   },
   recentDate: {
-    fontSize: 12,
-    color: '#94a3b8',
     marginTop: 2,
   },
   recentAmount: {
@@ -412,12 +419,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: tokens.radii.lg,
   },
   noTransactionsText: {
     marginTop: 12,
-    fontSize: 15,
-    color: '#64748b',
   },
 });

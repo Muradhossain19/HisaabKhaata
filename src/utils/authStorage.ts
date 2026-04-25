@@ -9,7 +9,6 @@ let storage:
   | undefined;
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const rn = require('react-native-mmkv') as {
     MMKV?: new (opts?: any) => MMKVType;
   };
@@ -17,7 +16,7 @@ try {
     // @ts-ignore runtime constructor
     storage = new rn.MMKV({ id: 'hisaabkhaata_auth' });
   }
-} catch (e) {
+} catch {
   // ignore
 }
 

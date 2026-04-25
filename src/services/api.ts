@@ -1,71 +1,35 @@
-/*
-  Lightweight API client for Laravel backend.
-  - setAuthToken(token) to set bearer token
-  - uploadFile(uri) to upload multipart/form-data
-  - postTransaction / bulkSync / getCategories
-*/
+import apiClient, { setAuthToken } from '../api/client';
 
-const BASE = process.env.API_BASE || 'http://127.0.0.1:8000';
-let authToken: string | null = null;
+export { setAuthToken };
 
-export function setAuthToken(token: string | null) {
-  authToken = token;
+export async function get<T = any>(path: string) {
+  const res = await apiClient.get<T>(path);
+  return res.data;
 }
 
-function authHeaders() {
-  const h: Record<string, string> = { Accept: 'application/json' };
-  if (authToken) h['Authorization'] = `Bearer ${authToken}`;
-  return h;
+export async function post<T = any>(path: string, body: any) {
+  const res = await apiClient.post<T>(path, body);
+  return res.data;
 }
 
-export async function get(path: string) {
-  const res = await fetch(`${BASE}${path}`, { headers: authHeaders() });
-  return res.json();
+export async function put<T = any>(path: string, body: any) {
+  const res = await apiClient.put<T>(path, body);
+  return res.data;
 }
 
-export async function post(path: string, body: any) {
-  const res = await fetch(`${BASE}${path}`, {
-    method: 'POST',
-    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
+export async function del<T = any>(path: string) {
+  const res = await apiClient.delete<T>(path);
+  return res.data;
 }
 
 export async function uploadFile(uri: string, name = 'file') {
   const form = new FormData();
-  // Try to derive filename and mimetype heuristically
   const filename = name || uri.split('/').pop() || 'upload.jpg';
-  // @ts-ignore
+  // @ts-ignore - React Native file object
   form.append('file', { uri, name: filename, type: 'image/jpeg' });
-
-  const res = await fetch(`${BASE}/api/uploads`, {
-    method: 'POST',
-    headers: authHeaders(), // don't set Content-Type
-    body: form as any,
+  const res = await apiClient.post('/api/uploads', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return res.json(); // expect { url }
+  return res.data; // expect { url }
 }
 
-// App-specific endpoints
-export async function postTransaction(payload: any) {
-  return post('/api/transactions', payload);
-}
-
-export async function bulkSync(transactions: any[]) {
-  return post('/api/transactions/bulk', { transactions });
-}
-
-export async function getCategories() {
-  return get('/api/categories');
-}
-
-export default {
-  setAuthToken,
-  postTransaction,
-  bulkSync,
-  uploadFile,
-  getCategories,
-  get,
-  post,
-};

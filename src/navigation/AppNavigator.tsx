@@ -5,47 +5,35 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-// আমাদের প্রধান স্ক্রিনগুলো
-import DashboardScreen from '../screens/DashboardScreen';
-import TransactionsListScreen from '../screens/TransactionsListScreen';
-
-// ডামি স্ক্রিন
-const ReportsScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Reports</Text>
-  </View>
-);
-const ProfileScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Profile</Text>
-  </View>
-);
+import DashboardNavigator from './DashboardNavigator';
+import TransactionsNavigator from './TransactionsNavigator';
+import ReportsNavigator from './ReportsNavigator';
+import SettingsNavigator from './SettingsNavigator';
+import { tokens } from '../theme/tokens';
 
 export type AppTabParamList = {
   Dashboard: undefined;
   Transactions: undefined;
   Reports: undefined;
-  Profile: undefined;
+  Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 // কাস্টম ট্যাব আইকন কম্পোনেন্ট
 const TabBarIcon = ({
-  route,
+  routeName,
   focused,
   color,
-}: // size,
-{
-  route: any;
+}: {
+  routeName: keyof AppTabParamList;
   focused: boolean;
   color: string;
-  size: number;
 }) => {
   let iconName: string;
   let label: string;
 
-  switch (route.name) {
+  switch (routeName) {
     case 'Dashboard':
       iconName = focused ? 'grid' : 'grid-outline';
       label = 'ড্যাশবোর্ড';
@@ -58,9 +46,9 @@ const TabBarIcon = ({
       iconName = focused ? 'bar-chart' : 'bar-chart-outline';
       label = 'রিপোর্ট';
       break;
-    case 'Profile':
+    case 'Settings':
       iconName = focused ? 'person' : 'person-outline';
-      label = 'প্রোফাইল';
+      label = 'সেটিংস';
       break;
     default:
       iconName = 'alert-circle';
@@ -70,9 +58,7 @@ const TabBarIcon = ({
   return (
     <View style={styles.tabIconContainer}>
       <Icon name={iconName} size={focused ? 24 : 22} color={color} />
-      <Text
-        style={[styles.tabLabel, { color: focused ? '#2563eb' : '#64748b' }]}
-      >
+      <Text style={[styles.tabLabel, focused ? styles.tabLabelActive : styles.tabLabelInactive]}>
         {label}
       </Text>
     </View>
@@ -86,22 +72,21 @@ const AppNavigator = () => {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: styles.tabBar,
-        tabBarIcon: ({ focused, color, size }) => (
+        tabBarIcon: ({ focused, color }) => (
           <TabBarIcon
-            route={route}
+            routeName={route.name as keyof AppTabParamList}
             focused={focused}
             color={color}
-            size={size}
           />
         ),
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#64748b',
+        tabBarActiveTintColor: tokens.colors.primary,
+        tabBarInactiveTintColor: tokens.colors.textMuted,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Transactions" component={TransactionsListScreen} />
-      <Tab.Screen name="Reports" component={ReportsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardNavigator} />
+      <Tab.Screen name="Transactions" component={TransactionsNavigator} />
+      <Tab.Screen name="Reports" component={ReportsNavigator} />
+      <Tab.Screen name="Settings" component={SettingsNavigator} />
     </Tab.Navigator>
   );
 };
@@ -112,7 +97,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.colors.surface,
     borderRadius: 20,
     height: 70,
     borderTopWidth: 0,
@@ -131,6 +116,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 4,
     fontWeight: '600',
+  },
+  tabLabelActive: {
+    color: tokens.colors.primary,
+  },
+  tabLabelInactive: {
+    color: tokens.colors.textMuted,
   },
 });
 

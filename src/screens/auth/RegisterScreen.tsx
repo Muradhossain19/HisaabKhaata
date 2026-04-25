@@ -5,12 +5,8 @@ import {
   View,
   Text,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
-  StatusBar,
-  ScrollView,
-  SafeAreaView,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,20 +14,24 @@ import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AppButton from '../../components/AppButton';
 import AuthStyles from '../../components/AuthStyles';
+import AuthScreenShell from '../../components/AuthScreenShell';
 import InputField from '../../components/InputField';
 import useForm from '../../hooks/useForm';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { registerUser } from '../../store/authSlice';
 import { useTranslation } from '../../i18n';
 import LanguageToggle from '../../components/LanguageToggle';
+import { authMetrics } from '../../theme/authTheme';
 
 const RegisterScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
   const dispatch = useAppDispatch();
-
+  const authLoading = useAppSelector(s => s.auth.loading);
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
+  const m = authMetrics(width);
 
   const { values, setField, errors, handleSubmit, reset } = useForm({
     initialValues: {
@@ -42,7 +42,7 @@ const RegisterScreen = () => {
       confirmPassword: '',
     },
     validate: vals => {
-      const e: any = {};
+      const e: Record<string, string> = {};
       if (!vals.name) e.name = t('auth.validation.nameRequired');
       if (!vals.phone) e.phone = t('auth.validation.phoneRequired');
       else if (!/^[0-9]{6,15}$/.test(vals.phone))
@@ -63,9 +63,7 @@ const RegisterScreen = () => {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
 
-  // already have `t` from useTranslation above
-
-  const onSubmit = async (vals: any) => {
+  const onSubmit = async (vals: typeof values) => {
     try {
       const action = await dispatch(
         registerUser({
@@ -77,10 +75,8 @@ const RegisterScreen = () => {
         }),
       );
 
-      // check result: if rejected, show backend message
       // @ts-ignore
       if (action.type && action.type.endsWith('/rejected')) {
-        // prefer returned payload message (structured payload from thunk)
         // @ts-ignore
         const payload = action.payload as any;
         try {
@@ -95,7 +91,6 @@ const RegisterScreen = () => {
           (action as any).error?.message ||
           t('auth.alerts.registrationFailed');
 
-        // show server validation details when available
         if (payload && payload.data) {
           const details =
             typeof payload.data === 'string'
@@ -110,143 +105,129 @@ const RegisterScreen = () => {
 
       Alert.alert(t('auth.alerts.registrationSuccess'));
       reset();
+      // After successful register, user is authenticated (token is set in store).
+      // RootNavigator will switch to AppNavigator.
     } catch (err: any) {
       Alert.alert(err?.message ?? t('auth.alerts.registrationFailed'));
     }
   };
 
   return (
-    <SafeAreaView style={AuthStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={AuthStyles.keyboardView}
-      >
-        {/* ScrollView যোগ করা হয়েছে যাতে ছোট স্ক্রিনেও ফর্মটি স্ক্রল করা যায় */}
-        <ScrollView
-          contentContainerStyle={AuthStyles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={AuthStyles.contentView}>
-            {/* ১. হেডার এবং ফিরে যাওয়ার বাটন */}
-            <View style={AuthStyles.headerContainer}>
-              <LanguageToggle />
-              <Text style={AuthStyles.title}>{t('auth.registerTitle')}</Text>
-              <Text style={AuthStyles.subtitle}>
-                {t('auth.registerSubtitle')}
-              </Text>
-            </View>
+    <AuthScreenShell centerVertical={false}>
+      <View style={AuthStyles.topRow}>
+        <LanguageToggle />
+      </View>
 
-            {/* ২. রেজিস্ট্রেশন ফর্ম */}
-            <View style={AuthStyles.formContainer}>
-              <InputField
-                value={values.name}
-                onChange={v => setField('name', v)}
-                placeholder={t('auth.placeholders.name')}
-                icon="person-outline"
+      <View style={AuthStyles.headerContainer}>
+        <Text style={[AuthStyles.title, { fontSize: m.titleSize }]}>
+          {t('auth.registerTitle')}
+        </Text>
+        <Text style={[AuthStyles.subtitle, { fontSize: m.subtitleSize }]}>
+          {t('auth.registerSubtitle')}
+        </Text>
+      </View>
+
+      <View style={AuthStyles.formContainer}>
+        <InputField
+          value={values.name}
+          onChange={v => setField('name', v)}
+          placeholder={t('auth.placeholders.name')}
+          icon="person-outline"
+          autoCapitalize="words"
+        />
+        {errors.name ? (
+          <Text style={AuthStyles.errorText}>{errors.name}</Text>
+        ) : null}
+
+        <InputField
+          value={values.phone}
+          onChange={v => setField('phone', v)}
+          placeholder={t('auth.placeholders.phone')}
+          keyboardType="phone-pad"
+          icon="call-outline"
+        />
+        {errors.phone ? (
+          <Text style={AuthStyles.errorText}>{errors.phone}</Text>
+        ) : null}
+
+        <InputField
+          value={values.email}
+          onChange={v => setField('email', v)}
+          placeholder={t('auth.placeholders.email')}
+          keyboardType="email-address"
+          icon="mail-outline"
+        />
+        {errors.email ? (
+          <Text style={AuthStyles.errorText}>{errors.email}</Text>
+        ) : null}
+
+        <InputField
+          value={values.password}
+          onChange={v => setField('password', v)}
+          placeholder={t('auth.placeholders.password')}
+          secure={!isPasswordVisible}
+          icon="lock-closed-outline"
+          rightAccessory={
+            <TouchableOpacity
+              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+              hitSlop={12}
+              accessibilityRole="button"
+            >
+              <Icon
+                name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#64748b"
               />
-              {errors.name ? (
-                <Text style={AuthStyles.errorText}>{errors.name}</Text>
-              ) : null}
+            </TouchableOpacity>
+          }
+        />
+        {errors.password ? (
+          <Text style={AuthStyles.errorText}>{errors.password}</Text>
+        ) : null}
 
-              <InputField
-                value={values.phone}
-                onChange={v => setField('phone', v)}
-                placeholder={t('auth.placeholders.phone')}
-                keyboardType="phone-pad"
-                icon="call-outline"
-              />
-              {errors.phone ? (
-                <Text style={AuthStyles.errorText}>{errors.phone}</Text>
-              ) : null}
-
-              <InputField
-                value={values.email}
-                onChange={v => setField('email', v)}
-                placeholder={t('auth.placeholders.email')}
-                keyboardType="email-address"
-                icon="mail-outline"
-              />
-              {errors.email ? (
-                <Text style={AuthStyles.errorText}>{errors.email}</Text>
-              ) : null}
-
-              <InputField
-                value={values.password}
-                onChange={v => setField('password', v)}
-                placeholder={t('auth.placeholders.password')}
-                secure={!isPasswordVisible}
-                icon="lock-closed-outline"
-                rightAccessory={
-                  <TouchableOpacity
-                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                  >
-                    <Icon
-                      name={
-                        isPasswordVisible ? 'eye-off-outline' : 'eye-outline'
-                      }
-                      size={22}
-                      color="#6b7280"
-                    />
-                  </TouchableOpacity>
+        <InputField
+          value={values.confirmPassword}
+          onChange={v => setField('confirmPassword', v)}
+          placeholder={t('auth.placeholders.confirmPassword')}
+          secure={!isConfirmPasswordVisible}
+          icon="lock-closed-outline"
+          rightAccessory={
+            <TouchableOpacity
+              onPress={() =>
+                setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
+              }
+              hitSlop={12}
+              accessibilityRole="button"
+            >
+              <Icon
+                name={
+                  isConfirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'
                 }
+                size={22}
+                color="#64748b"
               />
-              {errors.password ? (
-                <Text style={AuthStyles.errorText}>{errors.password}</Text>
-              ) : null}
+            </TouchableOpacity>
+          }
+        />
+        {errors.confirmPassword ? (
+          <Text style={AuthStyles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
+      </View>
 
-              <InputField
-                value={values.confirmPassword}
-                onChange={v => setField('confirmPassword', v)}
-                placeholder={t('auth.placeholders.confirmPassword')}
-                secure={!isConfirmPasswordVisible}
-                icon="lock-closed-outline"
-                rightAccessory={
-                  <TouchableOpacity
-                    onPress={() =>
-                      setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
-                    }
-                  >
-                    <Icon
-                      name={
-                        isConfirmPasswordVisible
-                          ? 'eye-off-outline'
-                          : 'eye-outline'
-                      }
-                      size={22}
-                      color="#6b7280"
-                    />
-                  </TouchableOpacity>
-                }
-              />
-              {errors.confirmPassword ? (
-                <Text style={AuthStyles.errorText}>
-                  {errors.confirmPassword}
-                </Text>
-              ) : null}
-            </View>
+      <AppButton
+        title={t('auth.buttons.register')}
+        onPress={() => handleSubmit(onSubmit)}
+        loading={authLoading}
+      />
 
-            {/* ৩. রেজিস্ট্রেশন বাটন */}
-            <AppButton
-              title={t('auth.buttons.register')}
-              onPress={() => handleSubmit(onSubmit)}
-            />
-
-            {/* ৪. লগইন স্ক্রিনে ফিরে যাওয়ার লিঙ্ক */}
-            <View style={AuthStyles.signupContainer}>
-              <Text style={AuthStyles.signupText}>
-                {t('auth.links.loginPrompt')}{' '}
-              </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={AuthStyles.signupLink}>
-                  {t('auth.links.loginLink')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <View style={AuthStyles.signupContainer}>
+        <Text style={AuthStyles.signupText}>{t('auth.links.loginPrompt')}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={AuthStyles.signupLink}>{t('auth.links.loginLink')}</Text>
+        </TouchableOpacity>
+      </View>
+    </AuthScreenShell>
   );
 };
+
 export default RegisterScreen;

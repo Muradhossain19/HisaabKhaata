@@ -22,7 +22,7 @@ const langSlice = createSlice({
       state.lang = action.payload;
       try {
         persistLang(action.payload);
-      } catch (e) {
+      } catch {
         // best-effort persistence; ignore errors
       }
     },
